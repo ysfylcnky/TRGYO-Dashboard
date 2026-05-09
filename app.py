@@ -162,6 +162,37 @@ with col4:
         beta
     )
 
+# KONTROL PANELİ
+
+colA, colB, colC = st.columns([1,1,2])
+
+# Grafik türü
+with colA:
+
+    grafik_turu = st.radio(
+        "Grafik Türü",
+        ["Çizgi Grafik", "Mum Grafik"],
+        horizontal=True
+    )
+
+# Hareketli ortalama
+with colB:
+
+    hareketli_ortalama = st.checkbox(
+        "Ortalamaları Göster",
+        value=True
+    )
+
+# Zaman aralığı
+with colC:
+
+    zaman_araligi = st.radio(
+        "Zaman Aralığı",
+        ["1 Ay", "3 Ay", "6 Ay", "1 Yıl"],
+        horizontal=True,
+        index=3
+    )
+
 
 # Grafik türüne göre gösterim
 
@@ -271,36 +302,7 @@ with col6:
 
 st.markdown("---")
 
-# KONTROL PANELİ
 
-colA, colB, colC = st.columns([1,1,2])
-
-# Grafik türü
-with colA:
-
-    grafik_turu = st.radio(
-        "Grafik Türü",
-        ["Çizgi Grafik", "Mum Grafik"],
-        horizontal=True
-    )
-
-# Hareketli ortalama
-with colB:
-
-    hareketli_ortalama = st.checkbox(
-        "Ortalamaları Göster",
-        value=True
-    )
-
-# Zaman aralığı
-with colC:
-
-    zaman_araligi = st.radio(
-        "Zaman Aralığı",
-        ["1 Ay", "3 Ay", "6 Ay", "1 Yıl"],
-        horizontal=True,
-        index=3
-    )
 
 st.subheader("Ekonomik Göstergeler")
 
