@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 import yfinance as yf
 import plotly.express as px
 import plotly.graph_objects as go
@@ -8,7 +8,21 @@ import numpy as np
 # Başlık
 st.title("Torunlar GYO Finans Dashboard")
 
+# SIDEBAR
 
+st.sidebar.title("Filtreler")
+
+# Grafik türü seçimi
+grafik_turu = st.sidebar.selectbox(
+    "Grafik Türü",
+    ["Çizgi Grafik", "Mum Grafik"]
+)
+
+# Hareketli ortalama aç/kapat
+hareketli_ortalama = st.sidebar.checkbox(
+    "Hareketli Ortalamaları Göster",
+    value=True
+)
 
 st.markdown("""
     <style>
@@ -45,9 +59,13 @@ st.set_page_config(
     layout="wide"
 )
 
-zaman_araligi = "1 Yıl"
-grafik_turu = "Çizgi Grafik"
-hareketli_ortalama = True
+# Veri çek
+zaman_araligi = st.sidebar.selectbox(
+    "Zaman Aralığı",
+    ["1 Ay", "3 Ay", "6 Ay", "1 Yıl"],
+    index = 3
+
+)
 # Seçilen zaman aralığına göre veri çekme
 
 if zaman_araligi == "1 Ay":
@@ -162,37 +180,6 @@ with col4:
         beta
     )
 
-# KONTROL PANELİ
-
-colA, colB, colC = st.columns([1,1,2])
-
-# Grafik türü
-with colA:
-
-    grafik_turu = st.radio(
-        "Grafik Türü",
-        ["Çizgi Grafik", "Mum Grafik"],
-        horizontal=True
-    )
-
-# Hareketli ortalama
-with colB:
-
-    hareketli_ortalama = st.checkbox(
-        "Ortalamaları Göster",
-        value=True
-    )
-
-# Zaman aralığı
-with colC:
-
-    zaman_araligi = st.radio(
-        "Zaman Aralığı",
-        ["1 Ay", "3 Ay", "6 Ay", "1 Yıl"],
-        horizontal=True,
-        index=3
-    )
-
 
 # Grafik türüne göre gösterim
 
@@ -299,10 +286,6 @@ with col6:
             </div>
         </div>
     """, unsafe_allow_html=True)
-
-st.markdown("---")
-
-
 
 st.subheader("Ekonomik Göstergeler")
 
