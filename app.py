@@ -63,7 +63,7 @@ def load_market_data(period):
     hisse = yf.download(
         "TRGYO.IS",
         period=period,
-        auto_adjust=True
+        auto_adjust=True,
         progress=False,
         threads=False
     )
@@ -71,7 +71,7 @@ def load_market_data(period):
     usdtry = yf.download(
         "TRY=X",
         period="1y",
-        auto_adjust=True
+        auto_adjust=True,
         progress=False,
         threads=False
     )
@@ -79,7 +79,7 @@ def load_market_data(period):
     altin = yf.download(
         "GC=F",
         period="1y",
-        auto_adjust=True
+        auto_adjust=True,
         progress=False,
         threads=False
     )
@@ -87,7 +87,7 @@ def load_market_data(period):
     bist100 = yf.download(
         "XU100.IS",
         period="1y",
-        auto_adjust=True
+        auto_adjust=True,
         progress=False,
         threads=False
     )
@@ -96,7 +96,7 @@ def load_market_data(period):
     us10y = yf.download(
         "^TNX",
         period="1y",
-        auto_adjust=True
+        auto_adjust=True,
         progress=False,
         threads=False
     )
