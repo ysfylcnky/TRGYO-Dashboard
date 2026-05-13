@@ -64,24 +64,32 @@ def load_market_data(period):
         "TRGYO.IS",
         period=period,
         auto_adjust=True
+        progress=False,
+        threads=False
     )
 
     usdtry = yf.download(
         "TRY=X",
         period="1y",
         auto_adjust=True
+        progress=False,
+        threads=False
     )
 
     altin = yf.download(
         "GC=F",
         period="1y",
         auto_adjust=True
+        progress=False,
+        threads=False
     )
 
     bist100 = yf.download(
         "XU100.IS",
         period="1y",
         auto_adjust=True
+        progress=False,
+        threads=False
     )
 
     # US 10Y Treasury
@@ -89,6 +97,8 @@ def load_market_data(period):
         "^TNX",
         period="1y",
         auto_adjust=True
+        progress=False,
+        threads=False
     )
 
     return hisse, usdtry, altin, bist100, us10y
