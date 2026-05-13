@@ -5,68 +5,147 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 
-# Başlık
-st.title("Torunlar GYO Finans Dashboard")
+# ---------------------------------------------------
+# SAYFA AYARI
+# ---------------------------------------------------
 
+st.set_page_config(
+    page_title="TRGYO Dashboard",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ---------------------------------------------------
+# CSS
+# ---------------------------------------------------
+
+st.markdown("""
+<style>
+
+.main {
+    background-color: #0E1117;
+}
+
+.card {
+    background-color: #1c1f26;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0px 0px 15px rgba(0,255,255,0.15);
+}
+
+.card-title {
+    font-size: 18px;
+    color: #AAAAAA;
+}
+
+.card-value {
+    font-size: 30px;
+    color: #00FFFF;
+    font-weight: bold;
+    
+.card:hover {
+    transform: translateY(-5px);
+    transition: 0.3s;
+}
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------------------
+# CACHE
+# ---------------------------------------------------
+
+@st.cache_data(ttl=3600)
+def load_market_data(period):
+
+    hisse = yf.download(
+        "TRGYO.IS",
+        period=period,
+        auto_adjust=True
+    )
+
+    usdtry = yf.download(
+        "TRY=X",
+        period="1y",
+        auto_adjust=True
+    )
+
+    altin = yf.download(
+        "GC=F",
+        period="1y",
+        auto_adjust=True
+    )
+
+    bist100 = yf.download(
+        "XU100.IS",
+        period="1y",
+        auto_adjust=True
+    )
+
+    # US 10Y Treasury
+    us10y = yf.download(
+        "^TNX",
+        period="1y",
+        auto_adjust=True
+    )
+
+    return hisse, usdtry, altin, bist100, us10y
+
+
+@st.cache_data(ttl=3600)
+def load_excel_data():
+
+    enflasyon_df = pd.read_excel("data/inflation.xlsx")
+    faiz_df = pd.read_excel("data/rate.xlsx")
+    pd_df = pd.read_excel("data/pd_orani.xlsx")
+    kar_df = pd.read_excel("data/ceyreklik_kar.xlsx")
+    gsyh_df = pd.read_excel("data/gsyh.xlsx")
+    konut_df = pd.read_excel("data/konut_satis.xlsx")
+    yield_df = pd.read_excel("data/yield_curve.xlsx")
+
+    return (
+        enflasyon_df,
+        faiz_df,
+        pd_df,
+        kar_df,
+        gsyh_df,
+        konut_df,
+        yield_df
+    )
+
+# ---------------------------------------------------
+# BAŞLIK
+# ---------------------------------------------------
+
+st.title("TRGYO Finans Dashboard")
+
+# ---------------------------------------------------
 # SIDEBAR
+# ---------------------------------------------------
 
 st.sidebar.title("Filtreler")
 
-# Grafik türü seçimi
 grafik_turu = st.sidebar.selectbox(
     "Grafik Türü",
     ["Çizgi Grafik", "Mum Grafik"]
 )
 
-# Hareketli ortalama aç/kapat
 hareketli_ortalama = st.sidebar.checkbox(
     "Hareketli Ortalamaları Göster",
     value=True
 )
 
-st.markdown("""
-    <style>
-
-    .main {
-        background-color: #0E1117;
-    }
-
-    .card { 
-        background-color: #1c1f26;
-        padding: 20px;
-        border-radius: 15px;
-        text-align: center;
-        box-shadow: 0px 0px 15px rgba(0,255,255,0.2);
-    }
-
-    .card-title {
-        font-size: 20px;
-        color: #AAAAAA;
-    }
-
-    .card-value {   
-        font-size: 35px;
-        color: #00FFFF;
-        font-weight: bold;
-    }
-
-    </style>
-""", unsafe_allow_html=True)
-
-# Sayfa ayarı
-st.set_page_config(
-    page_title="TRGYO Dashboard",
-    layout="wide"
-)
-
-# Veri çek
 zaman_araligi = st.sidebar.selectbox(
     "Zaman Aralığı",
     ["1 Ay", "3 Ay", "6 Ay", "1 Yıl"],
-    index = 3
-
+    index=3
 )
-# Seçilen zaman aralığına göre veri çekme
+
+# ---------------------------------------------------
+# PERIOD
+# ---------------------------------------------------
 
 if zaman_araligi == "1 Ay":
     period = "1mo"
@@ -80,28 +159,41 @@ elif zaman_araligi == "6 Ay":
 else:
     period = "1y"
 
-# Veri çek
-hisse = yf.download("TRGYO.IS", period=period)
+# ---------------------------------------------------
+# VERİLER
+# ---------------------------------------------------
 
-# Dolar kuru
-usdtry = yf.download("TRY=X", period="1y")
+(
+    hisse,
+    usdtry,
+    altin,
+    bist100,
+    us10y
+) = load_market_data(period)
 
-# Altın
-altin = yf.download("GC=F", period="1y")
+(
+    enflasyon_df,
+    faiz_df,
+    pd_df,
+    kar_df,
+    gsyh_df,
+    konut_df,
+    yield_df
+) = load_excel_data()
 
-# BIST100
-bist100 = yf.download("XU100.IS", period="1y")
+# ---------------------------------------------------
+# CLOSE PRICES
+# ---------------------------------------------------
 
-# Kapanış fiyatı
 close_prices = hisse["Close"].squeeze()
-# USDTRY
 usd_close = usdtry["Close"].squeeze()
-# Altın kapanış
 gold_close = altin["Close"].squeeze()
-# BIST100 kapanış
 bist_close = bist100["Close"].squeeze()
-# Günlük getiriler
-# Günlük getirileri birleştir
+us10y_close = us10y["Close"].squeeze()
+
+# ---------------------------------------------------
+# BETA HESABI
+# ---------------------------------------------------
 
 returns_df = pd.concat(
     [
@@ -111,54 +203,56 @@ returns_df = pd.concat(
     axis=1
 ).dropna()
 
-# Sütun isimleri
-
 returns_df.columns = ["TRGYO", "BIST100"]
 
-# Ayrıştır
-
 trgyo_returns = returns_df["TRGYO"]
-
 bist_returns = returns_df["BIST100"]
-# Beta hesabı
+
 covariance = np.cov(
     trgyo_returns,
     bist_returns
 )[0][1]
+
 market_variance = np.var(bist_returns)
-beta = covariance / market_variance
-beta = round(beta, 2)
 
-# Excel verileri
-enflasyon_df = pd.read_excel("data/inflation.xlsx")
-faiz_df = pd.read_excel("data/rate.xlsx")
-pd_df = pd.read_excel("data/pd_orani.xlsx")
-kar_df = pd.read_excel("data/ceyreklik_kar.xlsx")
-gsyh_df = pd.read_excel("data/gsyh.xlsx")
-konut_df = pd.read_excel("data/konut_satis.xlsx")
-yield_df = pd.read_excel("data/yield_curve.xlsx")
-
-
-# Hareketli ortalamalar
-hisse["MA50"] = close_prices.rolling(50).mean()
-hisse["MA200"] = close_prices.rolling(200).mean()
-
-# Güncel fiyat
-son_fiyat = round(close_prices.iloc[-1], 2)
-
-# Günlük değişim
-gunluk_degisim = round(
-    ((close_prices.iloc[-1] - close_prices.iloc[-2])
-     / close_prices.iloc[-2]) * 100,
+beta = round(
+    covariance / market_variance,
     2
 )
 
-# KPI kartları için sütunlar
-col1, col2, col3, col4 = st.columns(4)
+# ---------------------------------------------------
+# MOVING AVERAGES
+# ---------------------------------------------------
+
+hisse["MA50"] = close_prices.rolling(50).mean()
+hisse["MA200"] = close_prices.rolling(200).mean()
+
+# ---------------------------------------------------
+# KPI
+# ---------------------------------------------------
+
+son_fiyat = round(close_prices.iloc[-1], 2)
+
+gunluk_degisim = round(
+    (
+        (
+            close_prices.iloc[-1]
+            - close_prices.iloc[-2]
+        )
+        / close_prices.iloc[-2]
+    ) * 100,
+    2
+)
+
+# ---------------------------------------------------
+# KPI KARTLARI
+# ---------------------------------------------------
+
+col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
     st.metric(
-        "Güncel TRGYO Fiyatı",
+        "TRGYO",
         f"{son_fiyat} TL",
         f"%{gunluk_degisim}"
     )
@@ -174,14 +268,22 @@ with col3:
         "En Düşük",
         f"{round(close_prices.min(),2)} TL"
     )
+
 with col4:
     st.metric(
-        "TRGYO Beta",
+        "Beta",
         beta
     )
 
+with col5:
+    st.metric(
+        "US 10Y",
+        f"%{round(us10y_close.iloc[-1],2)}"
+    )
 
-# Grafik türüne göre gösterim
+# ---------------------------------------------------
+# ANA FİYAT GRAFİĞİ
+# ---------------------------------------------------
 
 if grafik_turu == "Çizgi Grafik":
 
@@ -192,72 +294,87 @@ if grafik_turu == "Çizgi Grafik":
     )
 
     if hareketli_ortalama:
+
         fig.add_scatter(
             x=hisse.index,
             y=hisse["MA50"],
             mode='lines',
-            name='MA50',
-            line=dict(color='orange', width=3)
+            name='MA50'
         )
 
         fig.add_scatter(
             x=hisse.index,
             y=hisse["MA200"],
             mode='lines',
-            name='MA200',
-            line=dict(color='purple', width=3)
+            name='MA200'
         )
 
     fig.update_layout(
         template="plotly_dark",
-        height=700
+        height=700,
+
+        xaxis_title="Tarih",
+        yaxis_title="Fiyat (TL)"
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
 
 else:
 
     fig = go.Figure()
 
-    # Mum grafik
-    fig.add_trace(go.Candlestick(
-        x=hisse.index,
-        open=hisse["Open"].squeeze(),
-        high=hisse["High"].squeeze(),
-        low=hisse["Low"].squeeze(),
-        close=close_prices,
-        name="TRGYO"
-    ))
-    if hareketli_ortalama:
-        # MA50
-        fig.add_trace(go.Scatter(
+    fig.add_trace(
+        go.Candlestick(
             x=hisse.index,
-            y=hisse["MA50"],
-            mode='lines',
-            name='MA50'
-        ))
+            open=hisse["Open"].squeeze(),
+            high=hisse["High"].squeeze(),
+            low=hisse["Low"].squeeze(),
+            close=close_prices,
+            name="TRGYO"
+        )
+    )
 
-        # MA200
-        fig.add_trace(go.Scatter(
-            x=hisse.index,
-            y=hisse["MA200"],
-            mode='lines',
-            name='MA200'
-        ))
+    if hareketli_ortalama:
+
+        fig.add_trace(
+            go.Scatter(
+                x=hisse.index,
+                y=hisse["MA50"],
+                mode='lines',
+                name='MA50'
+            )
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=hisse.index,
+                y=hisse["MA200"],
+                mode='lines',
+                name='MA200'
+            )
+        )
 
     fig.update_layout(
-        title="TRGYO Candlestick Grafiği",
         template="plotly_dark",
         height=700,
         xaxis_rangeslider_visible=False
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
 
-# Yeni sütunlar
-col4, col5, col6 = st.columns(3)
+# ---------------------------------------------------
+# EKONOMİ KARTLARI
+# ---------------------------------------------------
 
-with col4:
+eco_card1, eco_card2, eco_card3 = st.columns(3)
+
+with eco_card1:
     st.markdown(f"""
         <div class="card">
             <div class="card-title">USD/TRY</div>
@@ -267,7 +384,7 @@ with col4:
         </div>
     """, unsafe_allow_html=True)
 
-with col5:
+with eco_card2:
     st.markdown(f"""
         <div class="card">
             <div class="card-title">Altın</div>
@@ -277,7 +394,7 @@ with col5:
         </div>
     """, unsafe_allow_html=True)
 
-with col6:
+with eco_card3:
     st.markdown(f"""
         <div class="card">
             <div class="card-title">BIST100</div>
@@ -287,61 +404,100 @@ with col6:
         </div>
     """, unsafe_allow_html=True)
 
+# ---------------------------------------------------
+# EKONOMİK GÖSTERGELER
+# ---------------------------------------------------
+
 st.subheader("Ekonomik Göstergeler")
 
-# İki sütun
-left, right = st.columns(2)
+eco1, eco2, eco3 = st.columns(3)
 
-# USDTRY grafik
-with left:
+with eco1:
 
     fig_usd = px.line(
         x=usdtry.index,
         y=usd_close,
-        title="USD/TRY Grafiği"
+        title="USD/TRY",
+        labels={
+            "x" : "Tarih",
+            "y" : "USD/TRY"
+        }
     )
 
     fig_usd.update_layout(
         template="plotly_dark",
-        height=400
+        height=350
     )
 
-    st.plotly_chart(fig_usd, use_container_width=True)
+    st.plotly_chart(
+        fig_usd,
+        use_container_width=True
+    )
 
-# Altın grafik
-with right:
+with eco2:
 
     fig_gold = px.line(
         x=altin.index,
         y=gold_close,
-        title="Altın USD Grafiği"
+        title="Altın",
+    labels = {
+        "x": "Tarih",
+        "y": "ALTIN/USD"
+    }
     )
 
     fig_gold.update_layout(
         template="plotly_dark",
-        height=400
+        height=350
     )
 
-    st.plotly_chart(fig_gold, use_container_width=True)
+    st.plotly_chart(
+        fig_gold,
+        use_container_width=True
+    )
+
+with eco3:
+
+    fig_bist = px.line(
+        x=bist100.index,
+        y=bist_close,
+        title="BIST100",
+        labels={
+            "x": "Tarih",
+            "y": "BIST100"
+        }
+    )
+
+    fig_bist.update_layout(
+        template="plotly_dark",
+        height=350
+    )
+
+    st.plotly_chart(
+        fig_bist,
+        use_container_width=True
+    )
+
+# ---------------------------------------------------
+# MAKROEKONOMİK GRAFİKLER
+# ---------------------------------------------------
 
 st.subheader("Makroekonomik Göstergeler")
 
-col7, col8 = st.columns(2)
+macro1, macro2 = st.columns(2)
 
-# ENFLASYON GRAFİĞİ
-with col7:
+with macro1:
 
     fig_enflasyon = px.line(
         enflasyon_df,
-        x="Date",
-        y="Inflation",
+        x="Tarih",
+        y="Enflasyon",
         title="Türkiye Enflasyon Oranı"
     )
 
     fig_enflasyon.update_layout(
         template="plotly_dark",
-        height=400,
-        yaxis=dict(range=[0, 100])
+        height=400
     )
 
     st.plotly_chart(
@@ -349,20 +505,18 @@ with col7:
         use_container_width=True
     )
 
-# FAİZ GRAFİĞİ
-with col8:
+with macro2:
 
     fig_faiz = px.line(
         faiz_df,
-        x="Date",
-        y="Rate",
+        x="Tarih",
+        y="Faiz",
         title="Politika Faiz Oranı"
     )
 
     fig_faiz.update_layout(
         template="plotly_dark",
-        height=400,
-        yaxis=dict(range=[0, 100])
+        height=400
     )
 
     st.plotly_chart(
@@ -370,12 +524,63 @@ with col8:
         use_container_width=True
     )
 
+# ---------------------------------------------------
+# TRGYO vs 10Y ANALİZİ
+# ---------------------------------------------------
+
+st.subheader("TRGYO vs ABD 10Y Tahvil Analizi")
+
+fig_compare = go.Figure()
+
+fig_compare.add_trace(
+    go.Scatter(
+        x=hisse.index,
+        y=close_prices,
+        mode='lines',
+        name='TRGYO',
+        yaxis='y1'
+    )
+)
+
+fig_compare.add_trace(
+    go.Scatter(
+        x=us10y.index,
+        y=us10y_close,
+        mode='lines',
+        name='US 10Y',
+        yaxis='y2'
+    )
+)
+
+fig_compare.update_layout(
+    template="plotly_dark",
+    height=500,
+
+    yaxis=dict(
+        title="TRGYO"
+    ),
+
+    yaxis2=dict(
+        title="US 10Y",
+        overlaying='y',
+        side='right'
+    )
+)
+
+st.plotly_chart(
+    fig_compare,
+    use_container_width=True
+)
+
+# ---------------------------------------------------
+# FİNANSAL ANALİZ
+# ---------------------------------------------------
+
 st.subheader("Şirket Finansal Analizi")
 
-col9, col10 = st.columns(2)
+fin1, fin2 = st.columns(2)
 
-# P/D GRAFİĞİ
-with col9:
+with fin1:
 
     fig_pd = px.line(
         pd_df,
@@ -395,14 +600,13 @@ with col9:
         use_container_width=True
     )
 
-# Çeyreklik Kar
-with col10:
+with fin2:
 
     fig_kar = px.bar(
         kar_df,
-        x="Donem",
+        x="Tarih",
         y="NetKar",
-        title="TRGYO Çeyreklik Net Kar Büyümesi"
+        title="TRGYO Çeyreklik Net Kar"
     )
 
     fig_kar.update_layout(
@@ -415,12 +619,15 @@ with col10:
         use_container_width=True
     )
 
+# ---------------------------------------------------
+# MAKRO + SEKTÖR
+# ---------------------------------------------------
+
 st.subheader("Makroekonomik ve Sektörel Analiz")
 
-col11, col12 = st.columns(2)
+sec1, sec2 = st.columns(2)
 
-# GSYH GRAFİĞİ
-with col11:
+with sec1:
 
     fig_gsyh = px.line(
         gsyh_df,
@@ -432,8 +639,7 @@ with col11:
 
     fig_gsyh.update_layout(
         template="plotly_dark",
-        height=400,
-        yaxis=dict(range=[0,10])
+        height=400
     )
 
     st.plotly_chart(
@@ -441,8 +647,7 @@ with col11:
         use_container_width=True
     )
 
-# KONUT SATIŞLARI
-with col12:
+with sec2:
 
     fig_konut = px.bar(
         konut_df,
@@ -461,38 +666,44 @@ with col12:
         use_container_width=True
     )
 
+# ---------------------------------------------------
+# GETİRİ EĞRİSİ
+# ---------------------------------------------------
+
 st.subheader("Tahvil ve Getiri Eğrisi Analizi")
 
 fig_yield = go.Figure()
 
-# 2024
-fig_yield.add_trace(go.Scatter(
-    x=yield_df["Vade"],
-    y=yield_df[2024],
-    mode='lines+markers',
-    name='2024'
-))
+fig_yield.add_trace(
+    go.Scatter(
+        x=yield_df["Vade"],
+        y=yield_df[2024],
+        mode='lines+markers',
+        name='2024'
+    )
+)
 
-# 2025
-fig_yield.add_trace(go.Scatter(
-    x=yield_df["Vade"],
-    y=yield_df[2025],
-    mode='lines+markers',
-    name='2025'
-))
+fig_yield.add_trace(
+    go.Scatter(
+        x=yield_df["Vade"],
+        y=yield_df[2025],
+        mode='lines+markers',
+        name='2025'
+    )
+)
 
-# 2026
-fig_yield.add_trace(go.Scatter(
-    x=yield_df["Vade"],
-    y=yield_df[2026],
-    mode='lines+markers',
-    name='2026'
-))
+fig_yield.add_trace(
+    go.Scatter(
+        x=yield_df["Vade"],
+        y=yield_df[2026],
+        mode='lines+markers',
+        name='2026'
+    )
+)
 
 fig_yield.update_layout(
     template="plotly_dark",
-    height=500,
-    yaxis=dict(range=[0,50])
+    height=500
 )
 
 st.plotly_chart(
