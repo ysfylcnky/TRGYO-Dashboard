@@ -130,7 +130,7 @@ def load_excel_data():
 # ---------------------------------------------------
 
 st.title("TRGYO Finans Dashboard")
-st.cache_data.clear()
+
 
 # ---------------------------------------------------
 # SIDEBAR
