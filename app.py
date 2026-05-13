@@ -185,11 +185,29 @@ else:
 # CLOSE PRICES
 # ---------------------------------------------------
 
-close_prices = hisse["Close"].squeeze()
-usd_close = usdtry["Close"].squeeze()
-gold_close = altin["Close"].squeeze()
-bist_close = bist100["Close"].squeeze()
-us10y_close = us10y["Close"].squeeze()
+try:
+
+    close_prices = hisse["Close"].squeeze()
+    usd_close = usdtry["Close"].squeeze()
+    gold_close = altin["Close"].squeeze()
+    bist_close = bist100["Close"].squeeze()
+    us10y_close = us10y["Close"].squeeze()
+
+    # boş veri kontrolü
+    if (
+        close_prices.empty
+        or usd_close.empty
+        or gold_close.empty
+        or bist_close.empty
+        or us10y_close.empty
+    ):
+        st.error("Finansal veriler alınamadı. Lütfen daha sonra tekrar deneyin.")
+        st.stop()
+
+except Exception as e:
+
+    st.error(f"Veri çekme hatası: {e}")
+    st.stop()
 
 # ---------------------------------------------------
 # BETA HESABI
